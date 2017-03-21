@@ -200,16 +200,24 @@ class SudokuDLX {
 		// End Setup timer
 		long endTime = System.nanoTime();
 
-		long duration = (endTime - startTime);
-		System.out.println("Took: " + duration + "ns to setup");
+		long setupDuration = (endTime - startTime);
+		
+		startTime = endTime;
 
 		dancingLinkProblem.runSolver(filename);
 
 		// End timer
 		endTime = System.nanoTime();
 
-		duration = (endTime - startTime);
+		long duration = (endTime - startTime);
+		System.out.println("---------------------------------");
+		System.out.println("Took: " + setupDuration + "ns to setup CoverGrid");
 		System.out.println("Took: " + duration + "ns to solve");
+		System.out.println("Took: " + (duration + setupDuration) + "ns in total");
+		System.out.println("---------------------------------");
+		System.out.println("Took: " + (double)setupDuration / 1000000000.0 + "s to setup CoverGrid");
+		System.out.println("Took: " + (double)duration / 1000000000.0 + "s to solve");
+		System.out.println("Took: " + (double)(duration + setupDuration) / 1000000000.0 + "s in total");
 	}
 
 	public void handleSolution(List<DancingLinkNode> answer, String filename) {
@@ -281,15 +289,27 @@ class DancingLinks {
 	public void runSolver(String filename) {
 		updates = 0;
 		answer = new LinkedList<DancingLinkNode>();
-		search(0, filename);
-		System.out.println("Number of updates: " + updates);
+		if (search(0, filename)) {
+			System.out.println("Number of updates: " + updates);
+		} else {
+			System.out.println("Failed after: " + updates + " updates");
+			try {
+				String temp = filename;
+				temp = temp.substring(0, temp.length() - 4);
+				PrintWriter writer = new PrintWriter(temp + "Soultion.txt", "UTF-8");
+				writer.println("Puzzle has no solutions!");
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
-	private void search(int k, String filename) {
+	private boolean search(int k, String filename) {
 		if (header.right == header) {
 			System.out.println("\nSolution:\n");
 			handler.handleSolution(answer, filename);
-			return;
+			return true;
 		} else {
 			ColumnNode c = selectColumnNodeHeuristic();
 			c.cover();
@@ -301,7 +321,7 @@ class DancingLinks {
 					j.C.cover();
 				}
 
-				search(k + 1, filename);
+				if (search(k + 1, filename)) return true;
 
 				r = answer.remove(answer.size() - 1);
 				c = r.C;
@@ -312,6 +332,7 @@ class DancingLinks {
 			}
 			c.uncover();
 		}
+		return false;
 	}
 
 	private ColumnNode selectColumnNodeHeuristic() {
