@@ -28,15 +28,15 @@ public class SudokuRunnerDancingLinks {
 			int j = 0;
 			while (input.hasNext()) {
 				temp = input.nextInt();
-				count++;
 				start[i][j] = temp;
+				count++; 
 				j++;
 				if (j == boardSize) {
 					j = 0;
 					i++;
+					if (i == boardSize)
+						break;
 				}
-				if (i == boardSize)
-					break;
 			}
 			input.close();
 			if (count != boardSize * boardSize) {
@@ -52,84 +52,82 @@ public class SudokuRunnerDancingLinks {
 }
 
 class SudokuDLX {
-	private int S = 9; // size of the board
-	private int side = 3; // how long the side is
+	private int boardSize; // Size of the board
+	private int side; // Side Length
 
 	public boolean solve(int[][] sudoku, String filename) {
 		if (!validateSudoku(sudoku)) {
 			System.out.println("Error: Invalid sudoku. Aborting....");
 			return false;
 		}
-		S = sudoku.length;
-		side = (int) Math.sqrt(S);
+		boardSize = sudoku.length;
+		side = (int) Math.sqrt(boardSize);
 		runSolver(sudoku, filename);
 		return true;
 	}
 
-	// sudoku has numbers 1-9. A 0 indicates an empty cell that we will need to
-	// fill in.
 	private int[][] makeExactCoverGrid(int[][] sudoku) {
-		int[][] R = sudokuExactCover();
-		for (int i = 0; i < S; i++) {
-			for (int j = 0; j < S; j++) {
-				int n = sudoku[i][j];
-				if (n != 0) { // zero out in the constraint board
-					for (int num = 1; num <= S; num++) {
-						if (num != n) {
-							Arrays.fill(R[getColumn(i, j, num)], 0);
+		int[][] cover = sudokuExactCover();
+		for (int i = 0; i < boardSize; i++) {
+			for (int j = 0; j < boardSize; j++) {
+				int val = sudoku[i][j];
+				if (val != 0) {
+					for (int num = 1; num <= boardSize; num++) {
+						if (num != val) {
+							Arrays.fill(cover[getColumn(i, j, num)], 0);
 						}
 					}
 				}
 			}
 		}
-		return R;
+		return cover;
 	}
 
 	private int getColumn(int row, int col, int num) {
-		return (row) * S * S + (col) * S + (num - 1);
+		return (row) * boardSize * boardSize + (col) * boardSize + (num - 1);
 	}
 
 	// Returns the base exact cover grid for a SUDOKU puzzle
 	private int[][] sudokuExactCover() {
-		int[][] R = new int[S * S * S][S * S * 4];
+		int[][] cover = new int[boardSize * boardSize * boardSize][boardSize * boardSize * 4];
 		int matrixDepth = 0;
 		// row-column constraints
-		for (int r = 0; r < S; r++) {
-			for (int c = 0; c < S; c++, matrixDepth++) {
-				for (int n = 1; n <= S; n++) {
-					R[getColumn(r, c, n)][matrixDepth] = 1;
+		for (int r = 0; r < boardSize; r++) {
+			for (int c = 0; c < boardSize; c++, matrixDepth++) {
+				for (int n = 1; n <= boardSize; n++) {
+					cover[getColumn(r, c, n)][matrixDepth] = 1;
 				}
 			}
 		}
 		// Row Rule
-		for (int r = 0; r < S; r++) {
-			for (int n = 1; n <= S; n++, matrixDepth++) {
-				for (int c1 = 0; c1 < S; c1++) {
-					R[getColumn(r, c1, n)][matrixDepth] = 1;
+		for (int r = 0; r < boardSize; r++) {
+			for (int n = 1; n <= boardSize; n++, matrixDepth++) {
+				for (int c1 = 0; c1 < boardSize; c1++) {
+					cover[getColumn(r, c1, n)][matrixDepth] = 1;
 				}
 			}
 		}
 		// Column Rule
-		for (int c = 0; c < S; c++) {
-			for (int n = 1; n <= S; n++, matrixDepth++) {
-				for (int r1 = 0; r1 < S; r1++) {
-					R[getColumn(r1, c, n)][matrixDepth] = 1;
+		for (int c = 0; c < boardSize; c++) {
+			for (int n = 1; n <= boardSize; n++, matrixDepth++) {
+				for (int r1 = 0; r1 < boardSize; r1++) {
+					cover[getColumn(r1, c, n)][matrixDepth] = 1;
 				}
 			}
 		}
 		// Box Rule
-		for (int br = 0; br < S; br += side) {
-			for (int bc = 0; bc < S; bc += side) {
-				for (int n = 1; n <= S; n++, matrixDepth++) {
+		for (int br = 0; br < boardSize; br += side) {
+			for (int bc = 0; bc < boardSize; bc += side) {
+				for (int n = 1; n <= boardSize; n++, matrixDepth++) {
 					for (int rDelta = 0; rDelta < side; rDelta++) {
 						for (int cDelta = 0; cDelta < side; cDelta++) {
-							R[getColumn(br + rDelta, bc + cDelta, n)][matrixDepth] = 1;
+							cover[getColumn(br + rDelta, bc + cDelta, n)][matrixDepth] = 1;
 						}
 					}
 				}
 			}
 		}
-		return R;
+		return cover;
 	}
 
 	public static boolean validateSudoku(int[][] grid) {
@@ -195,7 +193,7 @@ class SudokuDLX {
 
 		int[][] cover = makeExactCoverGrid(sudoku);
 
-		DancingLinks dancingLinkProblem = new DancingLinks(cover, this);
+		DancingLinks dancingLinkProblem = new DancingLinks(cover);
 
 		// End Setup timer
 		long endTime = System.nanoTime();
@@ -204,20 +202,32 @@ class SudokuDLX {
 		
 		startTime = endTime;
 
-		dancingLinkProblem.runSolver(filename);
+		List<DancingLinkNode> ans = dancingLinkProblem.runSolver(filename);
 
 		// End timer
 		endTime = System.nanoTime();
+		
+		long solveDuration = (endTime - startTime);
 
-		long duration = (endTime - startTime);
+		startTime = endTime;
+		
+		printSolution(parseBoard(ans), filename);
+		
+		// End timer
+		endTime = System.nanoTime();
+		
+		long printDuration = (endTime - startTime);
+
 		System.out.println("---------------------------------");
 		System.out.println("Took: " + setupDuration + "ns to setup CoverGrid");
-		System.out.println("Took: " + duration + "ns to solve");
-		System.out.println("Took: " + (duration + setupDuration) + "ns in total");
+		System.out.println("Took: " + solveDuration + "ns to solve");
+		System.out.println("Took: " + printDuration + "ns to parse/print answer");
+		System.out.println("Took: " + (solveDuration + setupDuration + printDuration) + "ns in total");
 		System.out.println("---------------------------------");
 		System.out.println("Took: " + (double)setupDuration / 1000000000.0 + "s to setup CoverGrid");
-		System.out.println("Took: " + (double)duration / 1000000000.0 + "s to solve");
-		System.out.println("Took: " + (double)(duration + setupDuration) / 1000000000.0 + "s in total");
+		System.out.println("Took: " + (double)solveDuration / 1000000000.0 + "s to solve");
+		System.out.println("Took: " + (double)printDuration / 1000000000.0 + "s to parse/print answer");
+		System.out.println("Took: " + (double)(solveDuration + setupDuration + printDuration) / 1000000000.0 + "s in total");
 	}
 
 	public void handleSolution(List<DancingLinkNode> answer, String filename) {
@@ -253,7 +263,7 @@ class SudokuDLX {
 	}
 
 	private int[][] parseBoard(List<DancingLinkNode> answer) {
-		int[][] result = new int[S][S];
+		int[][] result = new int[boardSize][boardSize];
 		for (DancingLinkNode n : answer) {
 			DancingLinkNode rcNode = n;
 			int min = Integer.parseInt(rcNode.C.name);
@@ -266,9 +276,9 @@ class SudokuDLX {
 			}
 			int pos = Integer.parseInt(rcNode.C.name);
 			int val = Integer.parseInt(rcNode.right.C.name);
-			int r = pos / S;
-			int c = pos % S;
-			int num = (val % S) + 1;
+			int r = pos / boardSize;
+			int c = pos % boardSize;
+			int num = (val % boardSize) + 1;
 			result[r][c] = num;
 		}
 		return result;
@@ -278,19 +288,18 @@ class SudokuDLX {
 class DancingLinks {
 	private ColumnNode header;
 	private int updates = 0;
-	private SudokuDLX handler;
 	private List<DancingLinkNode> answer;
 
-	public DancingLinks(int[][] grid, SudokuDLX h) {
+	public DancingLinks(int[][] grid) {
 		header = setupDancingLink(grid);
-		handler = h;
 	}
 
-	public void runSolver(String filename) {
+	public List<DancingLinkNode> runSolver(String filename) {
 		updates = 0;
 		answer = new LinkedList<DancingLinkNode>();
 		if (search(0, filename)) {
 			System.out.println("Number of updates: " + updates);
+			return answer;
 		} else {
 			System.out.println("Failed after: " + updates + " updates");
 			try {
@@ -303,12 +312,11 @@ class DancingLinks {
 				e.printStackTrace();
 			}
 		}
+		return null;
 	}
 
 	private boolean search(int k, String filename) {
 		if (header.right == header) {
-			System.out.println("\nSolution:\n");
-			handler.handleSolution(answer, filename);
 			return true;
 		} else {
 			ColumnNode c = selectColumnNodeHeuristic();
@@ -320,8 +328,9 @@ class DancingLinks {
 				for (DancingLinkNode j = r.right; j != r; j = j.right) {
 					j.C.cover();
 				}
-
-				if (search(k + 1, filename)) return true;
+				
+				// Recursion, just return if done
+				if (search(k + 1, filename)) return true; 
 
 				r = answer.remove(answer.size() - 1);
 				c = r.C;
