@@ -1,0 +1,10 @@
+What improvements did I do?
+
+Originally:
+- Forward checking
+
+Then I changed it all...
+Dancing Links (What I am turning in):
+- Dancing Links 
+	- Forward checking
+	- Priority Queue
