@@ -29,7 +29,7 @@ public class SudokuRunnerDancingLinks {
 			while (input.hasNext()) {
 				temp = input.nextInt();
 				start[i][j] = temp;
-				count++; 
+				count++;
 				j++;
 				if (j == boardSize) {
 					j = 0;
@@ -60,21 +60,22 @@ class SudokuDLX {
 			System.out.println("Error: Invalid sudoku. Aborting....");
 			return false;
 		}
+		System.out.println("Validated");
 		boardSize = sudoku.length;
 		side = (int) Math.sqrt(boardSize);
 		runSolver(sudoku, filename);
 		return true;
 	}
 
-	private int[][] makeExactCoverGrid(int[][] sudoku) {
-		int[][] cover = sudokuExactCover();
+	private boolean[][] makeExactCoverGrid(int[][] sudoku) {
+		boolean[][] cover = sudokuExactCover();
 		for (int i = 0; i < boardSize; i++) {
 			for (int j = 0; j < boardSize; j++) {
 				int val = sudoku[i][j];
 				if (val != 0) {
 					for (int num = 1; num <= boardSize; num++) {
 						if (num != val) {
-							Arrays.fill(cover[getColumn(i, j, num)], 0);
+							Arrays.fill(cover[getColumn(i, j, num)], false);
 						}
 					}
 				}
@@ -88,42 +89,42 @@ class SudokuDLX {
 	}
 
 	// Returns the base exact cover grid for a SUDOKU puzzle
-	private int[][] sudokuExactCover() {
-		int[][] cover = new int[boardSize * boardSize * boardSize][boardSize * boardSize * 4];
+	private boolean[][] sudokuExactCover() {
+		boolean[][] cover = new boolean[boardSize * boardSize * boardSize][boardSize * boardSize * 4];
 		int matrixDepth = 0;
-		// row-column constraints
+		// A position constraint: Only 1 number can occupy a cell
 		for (int r = 0; r < boardSize; r++) {
 			for (int c = 0; c < boardSize; c++, matrixDepth++) {
 				for (int n = 1; n <= boardSize; n++) {
-					cover[getColumn(r, c, n)][matrixDepth] = 1;
+					cover[getColumn(r, c, n)][matrixDepth] = true;
 				}
 			}
 		}
-		// Row Rule
-		for (int r = 0; r < boardSize; r++) {
-			for (int n = 1; n <= boardSize; n++, matrixDepth++) {
-				for (int c1 = 0; c1 < boardSize; c1++) {
-					cover[getColumn(r, c1, n)][matrixDepth] = 1;
-				}
-			}
-		}
-		// Column Rule
-		for (int c = 0; c < boardSize; c++) {
-			for (int n = 1; n <= boardSize; n++, matrixDepth++) {
-				for (int r1 = 0; r1 < boardSize; r1++) {
-					cover[getColumn(r1, c, n)][matrixDepth] = 1;
-				}
-			}
-		}
-		// Box Rule
+		// A region constraint: Only 1 instance of a number can be in a region
 		for (int br = 0; br < boardSize; br += side) {
 			for (int bc = 0; bc < boardSize; bc += side) {
 				for (int n = 1; n <= boardSize; n++, matrixDepth++) {
 					for (int rDelta = 0; rDelta < side; rDelta++) {
 						for (int cDelta = 0; cDelta < side; cDelta++) {
-							cover[getColumn(br + rDelta, bc + cDelta, n)][matrixDepth] = 1;
+							cover[getColumn(br + rDelta, bc + cDelta, n)][matrixDepth] = true;
 						}
 					}
+				}
+			}
+		}
+		// A row constraint: Only 1 instance of a number can be in the row
+		for (int r = 0; r < boardSize; r++) {
+			for (int n = 1; n <= boardSize; n++, matrixDepth++) {
+				for (int c1 = 0; c1 < boardSize; c1++) {
+					cover[getColumn(r, c1, n)][matrixDepth] = true;
+				}
+			}
+		}
+		// A column constraint: Only 1 instance of a number can be in a column
+		for (int c = 0; c < boardSize; c++) {
+			for (int n = 1; n <= boardSize; n++, matrixDepth++) {
+				for (int r1 = 0; r1 < boardSize; r1++) {
+					cover[getColumn(r1, c, n)][matrixDepth] = true;
 				}
 			}
 		}
@@ -131,18 +132,41 @@ class SudokuDLX {
 	}
 
 	public static boolean validateSudoku(int[][] grid) {
+		// is a proper gird with only zeros and one to grid size
 		for (int i = 0; i < grid.length; i++) {
-			if (grid[i].length != grid.length)
+			if (grid[i].length != grid.length) {
+				System.out.println("bad width");
 				return false;
+			}
 			for (int j = 0; j < grid[i].length; j++) {
-				if (!(i >= 0 && i <= grid.length))
-					return false; // 0 means not filled in
+				if (!(i >= 0 && i <= grid.length)) {
+					System.out.println("bad length");
+					return false;
+				}
 			}
 		}
 
 		int N = grid.length;
-
 		boolean[] b = new boolean[N + 1];
+		// Box
+		int side = (int) Math.sqrt(N);
+		for (int i = 0; i < N; i += side) {
+			for (int j = 0; j < N; j += side) {
+				for (int d1 = 0; d1 < side; d1++) {
+					for (int d2 = 0; d2 < side; d2++) {
+						if (grid[i + d1][j + d2] == 0)
+							continue;
+						if (b[grid[i + d1][j + d2]]) {
+							System.out.println("bad box" + (i + d1) + "::" + (j + d2) + "::" + grid[i + d1][j + d2]);
+							return false;
+						}
+
+						b[grid[i + d1][j + d2]] = true;
+					}
+				}
+				Arrays.fill(b, false);
+			}
+		}
 
 		// Rows
 		for (int i = 0; i < N; i++) {
@@ -168,22 +192,6 @@ class SudokuDLX {
 			Arrays.fill(b, false);
 		}
 
-		// Box
-		int side = (int) Math.sqrt(N);
-		for (int i = 0; i < N; i += side) {
-			for (int j = 0; j < N; j += side) {
-				for (int d1 = 0; d1 < side; d1++) {
-					for (int d2 = 0; d2 < side; d2++) {
-						if (grid[i + d1][j + d2] == 0)
-							continue;
-						if (b[grid[i + d1][j + d2]])
-							return false;
-						b[grid[i + d1][j + d2]] = true;
-					}
-				}
-				Arrays.fill(b, false);
-			}
-		}
 		return true;
 	}
 
@@ -191,7 +199,7 @@ class SudokuDLX {
 		// Start the timer
 		long startTime = System.nanoTime();
 
-		int[][] cover = makeExactCoverGrid(sudoku);
+		boolean[][] cover = makeExactCoverGrid(sudoku);
 
 		DancingLinks dancingLinkProblem = new DancingLinks(cover);
 
@@ -199,23 +207,23 @@ class SudokuDLX {
 		long endTime = System.nanoTime();
 
 		long setupDuration = (endTime - startTime);
-		
+
 		startTime = endTime;
 
 		List<DancingLinkNode> ans = dancingLinkProblem.runSolver(filename);
 
-		// End timer
+		// End Solve timer
 		endTime = System.nanoTime();
-		
+
 		long solveDuration = (endTime - startTime);
 
 		startTime = endTime;
-		
+
 		printSolution(parseBoard(ans), filename);
-		
-		// End timer
+
+		// End Print timer
 		endTime = System.nanoTime();
-		
+
 		long printDuration = (endTime - startTime);
 
 		System.out.println("---------------------------------");
@@ -224,10 +232,11 @@ class SudokuDLX {
 		System.out.println("Took: " + printDuration + "ns to parse/print answer");
 		System.out.println("Took: " + (solveDuration + setupDuration + printDuration) + "ns in total");
 		System.out.println("---------------------------------");
-		System.out.println("Took: " + (double)setupDuration / 1000000000.0 + "s to setup CoverGrid");
-		System.out.println("Took: " + (double)solveDuration / 1000000000.0 + "s to solve");
-		System.out.println("Took: " + (double)printDuration / 1000000000.0 + "s to parse/print answer");
-		System.out.println("Took: " + (double)(solveDuration + setupDuration + printDuration) / 1000000000.0 + "s in total");
+		System.out.println("Took: " + (double) setupDuration / 1000000000.0 + "s to setup CoverGrid");
+		System.out.println("Took: " + (double) solveDuration / 1000000000.0 + "s to solve");
+		System.out.println("Took: " + (double) printDuration / 1000000000.0 + "s to parse/print answer");
+		System.out.println(
+				"Took: " + (double) (solveDuration + setupDuration + printDuration) / 1000000000.0 + "s in total");
 	}
 
 	public void handleSolution(List<DancingLinkNode> answer, String filename) {
@@ -290,14 +299,14 @@ class DancingLinks {
 	private int updates = 0;
 	private List<DancingLinkNode> answer;
 
-	public DancingLinks(int[][] grid) {
+	public DancingLinks(boolean[][] grid) {
 		header = setupDancingLink(grid);
 	}
 
 	public List<DancingLinkNode> runSolver(String filename) {
 		updates = 0;
 		answer = new LinkedList<DancingLinkNode>();
-		if (search(0, filename)) {
+		if (search(0)) {
 			System.out.println("Number of updates: " + updates);
 			return answer;
 		} else {
@@ -315,7 +324,7 @@ class DancingLinks {
 		return null;
 	}
 
-	private boolean search(int k, String filename) {
+	private boolean search(int k) {
 		if (header.right == header) {
 			return true;
 		} else {
@@ -328,9 +337,10 @@ class DancingLinks {
 				for (DancingLinkNode j = r.right; j != r; j = j.right) {
 					j.C.cover();
 				}
-				
+
 				// Recursion, just return if done
-				if (search(k + 1, filename)) return true; 
+				if (search(k + 1))
+					return true;
 
 				r = answer.remove(answer.size() - 1);
 				c = r.C;
@@ -364,7 +374,7 @@ class DancingLinks {
 	 *            CoverGrid of the Sudoku Puzzle
 	 * @return ColumnNode the node of the far left Column node
 	 */
-	private ColumnNode setupDancingLink(int[][] grid) {
+	private ColumnNode setupDancingLink(boolean[][] grid) {
 		int rowLength = grid.length;
 		int columnLength = grid[0].length;
 
@@ -380,7 +390,7 @@ class DancingLinks {
 		for (int i = rowLength - 1; i >= 0; i--) {
 			DancingLinkNode prev = null;
 			for (int j = 0; j < columnLength; j++) {
-				if (grid[i][j] == 1) {
+				if (grid[i][j]) {
 					ColumnNode col = columnNodes.get(j);
 					DancingLinkNode newNode = new DancingLinkNode(col);
 					col.hookDown(newNode);
@@ -439,7 +449,7 @@ class DancingLinks {
 			this.right.left = this.left;
 			updates++;
 		}
-		
+
 		// (1) in Paper
 		void unlinkUD() {
 			this.top.bottom = this.bottom;
