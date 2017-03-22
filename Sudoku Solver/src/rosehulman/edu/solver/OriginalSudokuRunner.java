@@ -6,12 +6,23 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class SudokuRunner {
-	public static void main(String[] args){
+/**
+ * 
+ * This was my first attempt at a sudoku solver. This one uses forward checking
+ * to reduce the time taken to find the solution, but can still run into long
+ * run times.
+ * 
+ * Note to Graders: Use the other solver please. This is just documenting my progress as I worked through this assignment.
+ * 
+ * @author siscodr
+ *
+ */
+public class OriginalSudokuRunner {
+	public static void main(String[] args) {
 		Sudoku sudoku = new Sudoku(args[0]);
 		sudoku.solve();
 		sudoku.printGrid();
-	}	
+	}
 }
 
 class Position {
@@ -23,7 +34,7 @@ class Position {
 		this.column = column;
 		this.row = row;
 	}
-	
+
 	public int getColumn() {
 		return column;
 	}
@@ -39,10 +50,10 @@ class Position {
 	public void setRow(int row) {
 		this.row = row;
 	}
-	
+
 	@Override
 	public String toString() {
-		return "Row:" + this.getRow() + "  Column:" + this.getColumn(); 
+		return "Row:" + this.getRow() + "  Column:" + this.getColumn();
 	}
 }
 
@@ -120,20 +131,20 @@ class Sudoku {
 		long duration = (endTime - startTime);
 		System.out.println("Took: " + duration + "ns to solve");
 	}
-	
-	private ArrayList<Position> solveEasy(){
+
+	private ArrayList<Position> solveEasy() {
 		ArrayList<Position> result = new ArrayList<Position>();
 		boolean flag = false;
-		for(int i = 0; i < this.boardSize; i++) {
+		for (int i = 0; i < this.boardSize; i++) {
 			for (int j = 0; j < this.boardSize; j++) {
 				if (this.vals[i][j] == 0) {
-					ArrayList<Integer> possible = getValidValues(new Position(i,j));
+					ArrayList<Integer> possible = getValidValues(new Position(i, j));
 					if (possible.size() == 1) {
 						this.vals[i][j] = possible.get(0);
-						result.add(new Position(i,j));
+						result.add(new Position(i, j));
 						flag = true;
 					} else if (true) {
-						
+
 					}
 				}
 			}
@@ -148,8 +159,8 @@ class Sudoku {
 		if (p == null) {
 			return true; // No more spaces to solve!
 		}
-//		ArrayList<Integer> validValues = getValidValues(p);
-//		for (int i : validValues) {
+		// ArrayList<Integer> validValues = getValidValues(p);
+		// for (int i : validValues) {
 		for (int i = 1; i <= this.boardSize; i++) {
 			if (validValue(p, i)) { // Forward checking by making sure this is a
 									// valid move
@@ -158,7 +169,7 @@ class Sudoku {
 				if (solveRecursive(nextSpotToSolve(p))) {
 					return true;
 				}
-				for (Position pos: easyMoves) {
+				for (Position pos : easyMoves) {
 					this.vals[pos.getRow()][pos.getColumn()] = 0;
 				}
 			}
@@ -173,8 +184,8 @@ class Sudoku {
 			result.add(i);
 		}
 		removeRows(p, result);
-		removeColumns(p,result);
-		removeBox(p,result);
+		removeColumns(p, result);
+		removeBox(p, result);
 		return result;
 	}
 
@@ -222,7 +233,7 @@ class Sudoku {
 		}
 		return true;
 	}
-	
+
 	private boolean checkRow(Position p, int val) {
 		for (int j = 0; j < this.boardSize; j++) {
 			if (j != p.getColumn()) {
@@ -278,7 +289,7 @@ class Sudoku {
 			}
 			String temp = this.filename;
 			temp = temp.substring(0, temp.length() - 4);
-		    PrintWriter writer;
+			PrintWriter writer;
 			try {
 				writer = new PrintWriter(temp + "Soultion.txt", "UTF-8");
 				for (int i = 0; i < boardSize; i++) {

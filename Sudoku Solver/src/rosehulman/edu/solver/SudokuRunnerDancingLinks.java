@@ -11,6 +11,21 @@ import java.util.Scanner;
 
 import rosehulman.edu.solver.DancingLinks.DancingLinkNode;
 
+/**
+ * This is a sudoku solver that uses the algorithm Dancing Links to efficiently
+ * back track through the puzzle to find the solution. First the input is taken
+ * and turned into a cover grid, at which point the cover grid can easily be
+ * solved through algorithm X. The design on how to convert the sudoku puzzle
+ * into a cover grid is described and referenced below, and so is the reference
+ * for the dancing link (algorithm x) paper as well.
+ * 
+ * Algorithm described:
+ * https://www.ocf.berkeley.edu/~jchu/publicportal/sudoku/sudoku.paper.html
+ * 
+ * Based on: https://www.ocf.berkeley.edu/~jchu/publicportal/sudoku/0011047.pdf
+ * 
+ * @author siscodr
+ */
 public class SudokuRunnerDancingLinks {
 
 	public static void main(String[] args) {
