@@ -3,9 +3,21 @@ What improvements did I do?
 
 Originally:
 - Forward checking
+This was effectively pruning any time an input would've created an invalid puzzle, 
+so there was no reason to keep going. This was massive and depending on the size of 
+the puzzle (Larger the puzzle the stronger the effect) reduced run time dramatically.
+However for the 16x16 hard puzzle which still hits the worse case scenario, the forward
+ checking can only do so much to speed up the process (which without would likely take a day to finish).
 
 Then I changed it all...
 Dancing Links (What I am turning in):
 - Dancing Links 
 	- Forward checking
 	- Priority Queue
+Dancing Links uses both forward checking and a built in priority queue. The speed is 
+all in the data structure. Once the solving process is started, nothing is created or 
+destroyed, but rather the references are moved around to allow for backtracking while 
+being able to do forward checking. This is monumental when it comes to speed as the 
+heuristic to pick the column (which acts like a priority queue) will make it so when 
+the algorithm has to guess a number that there are the fewest branches possible.
+[The Paper expands on this idea a bit more, but I can also explain more as well if desired]
